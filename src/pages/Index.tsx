@@ -89,130 +89,31 @@ const Index = () => {
     }
   };
 
-  const reverseGeocode = async (lat: number, lon: number): Promise<{ city: string; country: string } | null> => {
-    try {
-      // Using Nominatim (OpenStreetMap) for free reverse geocoding
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=pt-BR`,
-        {
-          headers: {
-            'User-Agent': 'WeatherApp/1.0'
-          }
-        }
-      );
-      const data = await response.json();
-
-      if (response.ok && data.address) {
-        // Try to get the most specific city name
-        const city = 
-          data.address.city || 
-          data.address.town || 
-          data.address.village || 
-          data.address.municipality ||
-          data.address.suburb ||
-          data.name;
-        
-        const country = data.address.country || '';
-        
-        return { city, country };
-      }
-      return null;
-    } catch (error) {
-      console.error("Reverse geocoding error:", error);
-      return null;
-    }
-  };
-
   const getCurrentLocationWeather = () => {
-    if (!navigator.geolocation) {
-      toast({
-        title: "Geolocalização não suportada",
-        description: "Seu navegador não suporta geolocalização. Busque uma cidade manualmente.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-    
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        // Keep 5 decimal places for precision
-        const latitude = parseFloat(position.coords.latitude.toFixed(5));
-        const longitude = parseFloat(position.coords.longitude.toFixed(5));
-        
-        toast({
-          title: "Localizando...",
-          description: `Coordenadas obtidas com precisão de ${Math.round(position.coords.accuracy)}m`,
-        });
-
-        // Get precise city name using reverse geocoding
-        const location = await reverseGeocode(latitude, longitude);
-        
-        // Fetch weather data
-        const url = `${API_BASE}?lat=${latitude}&lon=${longitude}&units=metric&lang=pt_br&appid=${API_KEY}`;
-        
-        try {
-          const response = await fetch(url);
-          const data = await response.json();
-
-          if (response.ok) {
-            // Use the more precise city name from reverse geocoding if available
-            setWeather({
-              city: location?.city || data.name,
-              country: location?.country || data.sys.country,
-              temp: data.main.temp,
-              description: data.weather[0].description,
-              humidity: data.main.humidity,
-              windSpeed: data.wind.speed,
-              icon: data.weather[0].icon,
-            });
-          } else {
-            toast({
-              title: "Erro",
-              description: data.message || "Não foi possível obter dados climáticos.",
-              variant: "destructive",
-            });
-          }
-        } catch (error) {
+    if (navigator.geolocation) {
+      setLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const url = `${API_BASE}?lat=${latitude}&lon=${longitude}&units=metric&lang=pt_br&appid=${API_KEY}`;
+          fetchWeather(url);
+        },
+        () => {
           toast({
-            title: "Erro de conexão",
-            description: "Não foi possível conectar ao serviço de clima.",
+            title: "Permissão negada",
+            description: "Não foi possível acessar sua localização. Busque uma cidade manualmente.",
             variant: "destructive",
           });
-        } finally {
           setLoading(false);
         }
-      },
-      (error) => {
-        setLoading(false);
-        
-        let errorMessage = "Não foi possível acessar sua localização.";
-        
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Permissão de localização negada. Por favor, habilite no navegador e tente novamente.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Localização indisponível. Verifique se o GPS está ativado.";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Tempo esgotado ao obter localização. Tente novamente.";
-            break;
-        }
-        
-        toast({
-          title: "Erro de Geolocalização",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
-    );
+      );
+    } else {
+      toast({
+        title: "Geolocalização não suportada",
+        description: "Seu navegador não suporta geolocalização.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCitySearch = (city: string) => {
@@ -248,18 +149,15 @@ const Index = () => {
             <p className="text-lg text-muted-foreground">{formatTime(currentTime)}</p>
           </div>
           <div className="flex items-center gap-2">
-            {weather && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={getCurrentLocationWeather}
-                className="rounded-full hover:bg-muted"
-                aria-label="Atualizar localização"
-                title="Corrigir/Atualizar Localização"
-              >
-                <MapPin className="h-5 w-5 text-primary" />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={getCurrentLocationWeather}
+              className="rounded-full hover:bg-muted"
+              aria-label="Detectar localização"
+            >
+              <MapPin className="h-5 w-5 text-foreground" />
+            </Button>
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
         </div>

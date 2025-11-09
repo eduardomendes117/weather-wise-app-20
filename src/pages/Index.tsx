@@ -164,7 +164,7 @@ const Index = () => {
 
         {/* Search Bar */}
         <div className="flex justify-center mb-12 animate-fade-in">
-          <SearchBar onSearch={handleCitySearch} />
+          <SearchBar onSearch={handleCitySearch} apiKey={API_KEY} />
         </div>
 
         {/* Weather Card or Loading */}

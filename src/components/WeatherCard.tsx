@@ -2,7 +2,6 @@ import { Cloud, Droplets, Wind } from "lucide-react";
 
 interface WeatherData {
   city: string;
-  state?: string;
   country: string;
   temp: number;
   description: string;
@@ -24,9 +23,7 @@ export const WeatherCard = ({ weather }: WeatherCardProps) => {
           <h2 className="text-3xl font-bold text-foreground">
             {weather.city}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {weather.state ? `${weather.state}, ${weather.country}` : weather.country}
-          </p>
+          <p className="text-sm text-muted-foreground">{weather.country}</p>
         </div>
 
         {/* Weather Icon & Temp */}

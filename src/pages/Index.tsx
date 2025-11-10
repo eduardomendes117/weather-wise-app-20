@@ -11,7 +11,6 @@ const API_BASE = "https://api.openweathermap.org/data/2.5/weather";
 
 interface WeatherData {
   city: string;
-  state?: string;
   country: string;
   temp: number;
   description: string;
@@ -56,7 +55,7 @@ const Index = () => {
     document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
 
-  const fetchWeather = async (url: string, state?: string) => {
+  const fetchWeather = async (url: string) => {
     setLoading(true);
     try {
       const response = await fetch(url);
@@ -65,7 +64,6 @@ const Index = () => {
       if (response.ok) {
         setWeather({
           city: data.name,
-          state: state,
           country: data.sys.country,
           temp: data.main.temp,
           description: data.weather[0].description,
@@ -91,27 +89,14 @@ const Index = () => {
     }
   };
 
-  const getCurrentLocationWeather = async () => {
+  const getCurrentLocationWeather = () => {
     if (navigator.geolocation) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
+        (position) => {
           const { latitude, longitude } = position.coords;
-          
-          // Try to get state from reverse geocoding
-          try {
-            const geoResponse = await fetch(
-              `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${API_KEY}`
-            );
-            const geoData = await geoResponse.json();
-            const state = geoData[0]?.state;
-            
-            const url = `${API_BASE}?lat=${latitude}&lon=${longitude}&units=metric&lang=pt_br&appid=${API_KEY}`;
-            fetchWeather(url, state);
-          } catch (error) {
-            const url = `${API_BASE}?lat=${latitude}&lon=${longitude}&units=metric&lang=pt_br&appid=${API_KEY}`;
-            fetchWeather(url);
-          }
+          const url = `${API_BASE}?lat=${latitude}&lon=${longitude}&units=metric&lang=pt_br&appid=${API_KEY}`;
+          fetchWeather(url);
         },
         () => {
           toast({
@@ -131,26 +116,9 @@ const Index = () => {
     }
   };
 
-  const handleCitySearch = async (city: string) => {
-    // Try to get state info from geocoding first
-    try {
-      const geoResponse = await fetch(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`
-      );
-      const geoData = await geoResponse.json();
-      
-      if (geoData.length > 0) {
-        const { lat, lon, state } = geoData[0];
-        const url = `${API_BASE}?lat=${lat}&lon=${lon}&units=metric&lang=pt_br&appid=${API_KEY}`;
-        fetchWeather(url, state);
-      } else {
-        const url = `${API_BASE}?q=${city}&units=metric&lang=pt_br&appid=${API_KEY}`;
-        fetchWeather(url);
-      }
-    } catch (error) {
-      const url = `${API_BASE}?q=${city}&units=metric&lang=pt_br&appid=${API_KEY}`;
-      fetchWeather(url);
-    }
+  const handleCitySearch = (city: string) => {
+    const url = `${API_BASE}?q=${city}&units=metric&lang=pt_br&appid=${API_KEY}`;
+    fetchWeather(url);
   };
 
   const formatDate = (date: Date) => {
@@ -196,7 +164,7 @@ const Index = () => {
 
         {/* Search Bar */}
         <div className="flex justify-center mb-12 animate-fade-in">
-          <SearchBar onSearch={handleCitySearch} apiKey={API_KEY} />
+          <SearchBar onSearch={handleCitySearch} />
         </div>
 
         {/* Weather Card or Loading */}
